@@ -3,6 +3,8 @@ package com.purbon.kafka.topology;
 import com.purbon.kafka.topology.actions.Action;
 import com.purbon.kafka.topology.actions.BaseAccountsAction;
 import com.purbon.kafka.topology.actions.access.ClearBindings;
+import com.purbon.kafka.topology.actions.accounts.ClearAccounts;
+import com.purbon.kafka.topology.actions.accounts.CreateAccounts;
 import com.purbon.kafka.topology.principals.ServiceAccount;
 import com.purbon.kafka.topology.roles.TopologyAclBinding;
 import java.io.IOException;
@@ -23,7 +25,7 @@ public class ExecutionPlan {
   private PrintStream outputStream;
   private BackendController backendController;
   private Set<TopologyAclBinding> bindings;
-  private HashSet<ServiceAccount> serviceAccounts;
+  private Set<ServiceAccount> serviceAccounts;
 
   private ExecutionPlan(
       List<Action> plan, PrintStream outputStream, BackendController backendController) {
@@ -85,7 +87,18 @@ public class ExecutionPlan {
           bindings.addAll(action.getBindings());
         }
       }
-      if (action instanceof BaseAccountsAction) {}
+      if (action instanceof BaseAccountsAction) {
+        if (action instanceof ClearAccounts) {
+          ClearAccounts clearAccountsAction = (ClearAccounts)action;
+          serviceAccounts = serviceAccounts.stream()
+              .filter(
+                  serviceAccount -> !clearAccountsAction.getPrincipals().contains(serviceAccount))
+              .collect(Collectors.toSet());
+        } else {
+          CreateAccounts createAction = (CreateAccounts)action;
+          serviceAccounts.addAll(createAction.getPrincipals());
+        }
+      }
     }
   }
 
