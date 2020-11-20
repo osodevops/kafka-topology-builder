@@ -40,13 +40,12 @@ public class CCloudCLI {
     try {
       stdout = run(cmd);
       ServiceAccount[] items = mapper.readValue(stdout, ServiceAccount[].class);
-      return Arrays.asList(items).stream().collect(Collectors.toMap(i -> ""+i.getId(), i->i));
+      return Arrays.asList(items).stream().collect(Collectors.toMap(i -> "" + i.getName(), i -> i));
     } catch (IOException | InterruptedException e) {
       handleError(stdout, e);
       return null;
     }
   }
-
 
   public void setEnvironment(String environment) throws IOException {
     List<String> cmd = Arrays.asList("ccloud", "environment", "use", environment);
@@ -58,9 +57,17 @@ public class CCloudCLI {
     }
   }
 
-
   public ServiceAccount newServiceAccount(String name, String description) throws IOException {
-    List<String> cmd = Arrays.asList("ccloud", "service-account", "create", name, "--description", description, "--output", "json");
+    List<String> cmd =
+        Arrays.asList(
+            "ccloud",
+            "service-account",
+            "create",
+            name,
+            "--description",
+            description,
+            "--output",
+            "json");
     String stdout = "";
     ServiceAccount sa = null;
     try {
@@ -98,7 +105,7 @@ public class CCloudCLI {
     String stdout = readStdOut(pr);
     pr.waitFor();
 
-    LOGGER.debug("Exit code: "+pr.exitValue());
+    LOGGER.debug("Exit code: " + pr.exitValue());
     return stdout;
   }
 
@@ -107,8 +114,8 @@ public class CCloudCLI {
     StringBuilder sb = new StringBuilder();
     String line = null;
     while ((line = br.readLine()) != null) {
-     sb.append(line);
-     sb.append("\n");
+      sb.append(line);
+      sb.append("\n");
     }
     return sb.toString();
   }
@@ -117,7 +124,5 @@ public class CCloudCLI {
 
     CCloudCLI cli = new CCloudCLI();
     cli.setEnvironment("env-j9wgp");
-
-
   }
 }

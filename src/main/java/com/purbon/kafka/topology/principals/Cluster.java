@@ -11,10 +11,17 @@ public class Cluster {
   private String type;
 
   public Cluster() {
-   this("", "", "", "", "", "", "");
+    this("", "", "", "", "", "", "");
   }
-  public Cluster(String availability, String id, String name, String provider,
-      String region, String status, String type) {
+
+  public Cluster(
+      String availability,
+      String id,
+      String name,
+      String provider,
+      String region,
+      String status,
+      String type) {
     this.availability = availability;
     this.id = id;
     this.name = name;

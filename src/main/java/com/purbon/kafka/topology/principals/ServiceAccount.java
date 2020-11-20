@@ -1,5 +1,7 @@
 package com.purbon.kafka.topology.principals;
 
+import java.util.Objects;
+
 public class ServiceAccount {
 
   private int id;
@@ -35,5 +37,24 @@ public class ServiceAccount {
     sb.append(", name='").append(name).append('\'');
     sb.append('}');
     return sb.toString();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof ServiceAccount)) {
+      return false;
+    }
+    ServiceAccount that = (ServiceAccount) o;
+    return getId() == that.getId()
+        && getName().equals(that.getName())
+        && Objects.equals(getDescription(), that.getDescription());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(getId(), getName(), getDescription());
   }
 }

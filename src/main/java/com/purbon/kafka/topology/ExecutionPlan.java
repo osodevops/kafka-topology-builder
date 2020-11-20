@@ -1,7 +1,9 @@
 package com.purbon.kafka.topology;
 
 import com.purbon.kafka.topology.actions.Action;
+import com.purbon.kafka.topology.actions.BaseAccountsAction;
 import com.purbon.kafka.topology.actions.access.ClearBindings;
+import com.purbon.kafka.topology.principals.ServiceAccount;
 import com.purbon.kafka.topology.roles.TopologyAclBinding;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -21,15 +23,18 @@ public class ExecutionPlan {
   private PrintStream outputStream;
   private BackendController backendController;
   private Set<TopologyAclBinding> bindings;
+  private HashSet<ServiceAccount> serviceAccounts;
 
   private ExecutionPlan(
       List<Action> plan, PrintStream outputStream, BackendController backendController) {
     this.plan = plan;
     this.outputStream = outputStream;
     this.bindings = new HashSet<>();
+    this.serviceAccounts = new HashSet<>();
     this.backendController = backendController;
     if (backendController.size() > 0) {
       this.bindings.addAll(backendController.getBindings());
+      this.serviceAccounts.addAll(backendController.getServiceAccounts());
     }
   }
 
@@ -60,6 +65,7 @@ public class ExecutionPlan {
 
     backendController.reset();
     backendController.add(new ArrayList<>(bindings));
+    backendController.addServiceAccounts(serviceAccounts);
     backendController.flushAndClose();
   }
 
@@ -79,7 +85,12 @@ public class ExecutionPlan {
           bindings.addAll(action.getBindings());
         }
       }
+      if (action instanceof BaseAccountsAction) {}
     }
+  }
+
+  public Set<ServiceAccount> getServiceAccounts() {
+    return serviceAccounts;
   }
 
   public Set<TopologyAclBinding> getBindings() {

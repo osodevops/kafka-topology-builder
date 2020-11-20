@@ -64,6 +64,10 @@ public class TopologyBuilderConfig {
 
   static final String OPTIMIZED_ACLS_CONFIG = "topology.acls.optimized";
 
+  static final String CCLOUD_ENV_CONFIG = "ccloud.environment";
+
+  static final String TOPOLOGY_EXPERIMENTAL_ENABLED_CONFIG = "topology.features.experimental";
+
   private final Map<String, String> cliParams;
   private Config config;
 
@@ -261,6 +265,18 @@ public class TopologyBuilderConfig {
 
   public Boolean shouldOptimizeAcls() {
     return config.getBoolean(OPTIMIZED_ACLS_CONFIG);
+  }
+
+  public String getConfluentCloudEnv() {
+    return config.getString(CCLOUD_ENV_CONFIG);
+  }
+
+  public boolean enabledExperimental() {
+    return config.getBoolean(TOPOLOGY_EXPERIMENTAL_ENABLED_CONFIG);
+  }
+
+  public boolean hasProperty(String property) {
+    return config.hasPath(property);
   }
 
   public List<String> getTopologyValidations() {
