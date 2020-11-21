@@ -3,10 +3,14 @@ package com.purbon.kafka.topology;
 import static com.purbon.kafka.topology.BuilderCLI.BROKERS_OPTION;
 import static com.purbon.kafka.topology.TopologyBuilderConfig.TOPOLOGY_EXPERIMENTAL_ENABLED_CONFIG;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
+import com.purbon.kafka.topology.actions.Action;
 import com.purbon.kafka.topology.actions.accounts.ClearAccounts;
 import com.purbon.kafka.topology.actions.accounts.CreateAccounts;
 import com.purbon.kafka.topology.model.Impl.ProjectImpl;
@@ -50,6 +54,8 @@ public class PrincipalManagerTest {
   BackendController backendController;
 
   @Mock PrintStream mockPrintStream;
+
+  @Mock ExecutionPlan mockPlan;
 
   @Before
   public void before() throws IOException {
@@ -136,5 +142,19 @@ public class PrincipalManagerTest {
     assertThat(plan.getServiceAccounts()).hasSize(1);
     assertThat(plan.getServiceAccounts())
         .contains(new ServiceAccount(123, "consumer", "Managed by KTB"));
+  }
+
+  @Test
+  public void testNotRunIfConfigNotExperimental() throws IOException {
+    props.put(TOPOLOGY_EXPERIMENTAL_ENABLED_CONFIG, "false");
+
+    config = new TopologyBuilderConfig(cliOps, props);
+    principalManager = new PrincipalManager(provider, config);
+
+    Topology topology = new TopologyImpl();
+
+    principalManager.apply(topology, mockPlan);
+
+    verify(mockPlan, times(0)).add(any(Action.class));
   }
 }
