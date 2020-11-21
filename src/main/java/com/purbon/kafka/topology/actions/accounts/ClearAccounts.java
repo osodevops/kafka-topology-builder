@@ -2,7 +2,7 @@ package com.purbon.kafka.topology.actions.accounts;
 
 import com.purbon.kafka.topology.PrincipalProvider;
 import com.purbon.kafka.topology.actions.BaseAccountsAction;
-import com.purbon.kafka.topology.principals.ServiceAccount;
+import com.purbon.kafka.topology.model.cluster.ServiceAccount;
 import java.io.IOException;
 import java.util.Collection;
 import org.apache.logging.log4j.LogManager;

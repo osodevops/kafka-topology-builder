@@ -1,6 +1,7 @@
-package com.purbon.kafka.topology.principals;
+package com.purbon.kafka.topology.serviceAccounts;
 
 import com.purbon.kafka.topology.PrincipalProvider;
+import com.purbon.kafka.topology.model.cluster.ServiceAccount;
 import java.io.IOException;
 import java.util.List;
 

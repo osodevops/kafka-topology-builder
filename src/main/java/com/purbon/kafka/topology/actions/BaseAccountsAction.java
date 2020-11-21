@@ -1,7 +1,7 @@
 package com.purbon.kafka.topology.actions;
 
 import com.purbon.kafka.topology.PrincipalProvider;
-import com.purbon.kafka.topology.principals.ServiceAccount;
+import com.purbon.kafka.topology.model.cluster.ServiceAccount;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;

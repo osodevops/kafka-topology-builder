@@ -1,7 +1,7 @@
 package com.purbon.kafka.topology.backend;
 
 import com.purbon.kafka.topology.BackendController;
-import com.purbon.kafka.topology.principals.ServiceAccount;
+import com.purbon.kafka.topology.model.cluster.ServiceAccount;
 import com.purbon.kafka.topology.roles.TopologyAclBinding;
 import java.io.IOException;
 import java.util.Set;

@@ -1,7 +1,7 @@
 package com.purbon.kafka.topology.backend;
 
 import com.purbon.kafka.topology.BackendController.Mode;
-import com.purbon.kafka.topology.principals.ServiceAccount;
+import com.purbon.kafka.topology.model.cluster.ServiceAccount;
 import com.purbon.kafka.topology.roles.TopologyAclBinding;
 import com.purbon.kafka.topology.utils.JSON;
 import java.io.BufferedReader;

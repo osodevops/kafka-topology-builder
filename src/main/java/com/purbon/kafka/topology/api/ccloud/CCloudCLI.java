@@ -1,6 +1,8 @@
-package com.purbon.kafka.topology.principals;
+package com.purbon.kafka.topology.api.ccloud;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.purbon.kafka.topology.model.cluster.Cluster;
+import com.purbon.kafka.topology.model.cluster.ServiceAccount;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;

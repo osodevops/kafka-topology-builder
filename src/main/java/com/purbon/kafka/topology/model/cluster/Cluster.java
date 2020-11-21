@@ -1,4 +1,4 @@
-package com.purbon.kafka.topology.principals;
+package com.purbon.kafka.topology.model.cluster;
 
 public class Cluster {
 
