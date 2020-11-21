@@ -69,8 +69,6 @@ public class FileBackend implements Backend {
       }
       if (type.equalsIgnoreCase("acls")) {
         binding = buildAclBinding(line);
-      } else if (type.equalsIgnoreCase("rbac")) {
-        binding = buildRBACBinding(line);
       } else {
         throw new IOException("Binding type ( " + type + " )not supported.");
       }
