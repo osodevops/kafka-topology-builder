@@ -5,6 +5,7 @@ import com.purbon.kafka.topology.principals.ServiceAccount;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public abstract class BaseAccountsAction extends BaseAction {
 
@@ -26,5 +27,23 @@ public abstract class BaseAccountsAction extends BaseAction {
     map.put("Operation", getClass().getName());
     map.put("Principals", accounts);
     return map;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof BaseAccountsAction)) {
+      return false;
+    }
+    BaseAccountsAction that = (BaseAccountsAction) o;
+    return Objects.equals(provider, that.provider) &&
+        Objects.equals(accounts, that.accounts);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(provider, accounts);
   }
 }
