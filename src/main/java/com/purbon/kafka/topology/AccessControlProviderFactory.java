@@ -8,10 +8,12 @@ import static com.purbon.kafka.topology.TopologyBuilderConfig.RBAC_ACCESS_CONTRO
 import com.purbon.kafka.topology.api.adminclient.TopologyBuilderAdminClient;
 import com.purbon.kafka.topology.api.mds.MDSApiClient;
 import com.purbon.kafka.topology.api.mds.MDSApiClientBuilder;
+import com.purbon.kafka.topology.principals.CCloudCLI;
 import com.purbon.kafka.topology.roles.RBACProvider;
 import com.purbon.kafka.topology.roles.SimpleAclsProvider;
 import com.purbon.kafka.topology.roles.acls.AclsBindingsBuilder;
 import com.purbon.kafka.topology.roles.rbac.RBACBindingsBuilder;
+import com.purbon.kafka.topology.utils.CCloudUtils;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 
@@ -56,9 +58,16 @@ public class AccessControlProviderFactory {
 
   public BindingsBuilderProvider builder() throws IOException {
     String accessControlClass = config.getAccessControlClassName();
+
+    CCloudCLI cCloudApi = new CCloudCLI();
+    CCloudUtils cCloudUtils = new CCloudUtils(cCloudApi, config);
+    if (config.useConfuentCloud() && config.enabledExperimental()) {
+      cCloudUtils.warmup();
+    }
+
     try {
       if (accessControlClass.equalsIgnoreCase(ACCESS_CONTROL_DEFAULT_CLASS)) {
-        return new AclsBindingsBuilder(config);
+        return new AclsBindingsBuilder(config, cCloudUtils);
       } else if (accessControlClass.equalsIgnoreCase(RBAC_ACCESS_CONTROL_CLASS)) {
         MDSApiClient apiClient = apiClientLogIn();
         apiClient.authenticate();

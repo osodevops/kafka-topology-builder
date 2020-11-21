@@ -89,13 +89,15 @@ public class ExecutionPlan {
       }
       if (action instanceof BaseAccountsAction) {
         if (action instanceof ClearAccounts) {
-          ClearAccounts clearAccountsAction = (ClearAccounts)action;
-          serviceAccounts = serviceAccounts.stream()
-              .filter(
-                  serviceAccount -> !clearAccountsAction.getPrincipals().contains(serviceAccount))
-              .collect(Collectors.toSet());
+          ClearAccounts clearAccountsAction = (ClearAccounts) action;
+          serviceAccounts =
+              serviceAccounts.stream()
+                  .filter(
+                      serviceAccount ->
+                          !clearAccountsAction.getPrincipals().contains(serviceAccount))
+                  .collect(Collectors.toSet());
         } else {
-          CreateAccounts createAction = (CreateAccounts)action;
+          CreateAccounts createAction = (CreateAccounts) action;
           serviceAccounts.addAll(createAction.getPrincipals());
         }
       }

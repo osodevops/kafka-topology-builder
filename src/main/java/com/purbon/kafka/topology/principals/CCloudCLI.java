@@ -40,7 +40,8 @@ public class CCloudCLI {
     try {
       stdout = run(cmd);
       ServiceAccount[] items = mapper.readValue(stdout, ServiceAccount[].class);
-      return Arrays.asList(items).stream().collect(Collectors.toMap(i -> "" + i.getName(), i -> i));
+      return Arrays.asList(items).stream()
+          .collect(Collectors.toMap(ServiceAccount::getName, i -> i));
     } catch (IOException | InterruptedException e) {
       handleError(stdout, e);
       return null;

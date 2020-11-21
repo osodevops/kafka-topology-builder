@@ -64,7 +64,7 @@ public class TopologyBuilderConfig {
 
   static final String OPTIMIZED_ACLS_CONFIG = "topology.acls.optimized";
 
-  static final String CCLOUD_ENV_CONFIG = "ccloud.environment";
+  public static final String CCLOUD_ENV_CONFIG = "ccloud.environment";
 
   static final String TOPOLOGY_EXPERIMENTAL_ENABLED_CONFIG = "topology.features.experimental";
 
@@ -273,6 +273,10 @@ public class TopologyBuilderConfig {
 
   public boolean enabledExperimental() {
     return config.getBoolean(TOPOLOGY_EXPERIMENTAL_ENABLED_CONFIG);
+  }
+
+  public boolean useConfuentCloud() {
+    return config.hasPath(CCLOUD_ENV_CONFIG);
   }
 
   public boolean hasProperty(String property) {

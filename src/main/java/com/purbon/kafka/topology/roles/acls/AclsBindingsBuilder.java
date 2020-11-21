@@ -9,7 +9,9 @@ import com.purbon.kafka.topology.model.users.Connector;
 import com.purbon.kafka.topology.model.users.Consumer;
 import com.purbon.kafka.topology.model.users.Producer;
 import com.purbon.kafka.topology.model.users.platform.SchemaRegistryInstance;
+import com.purbon.kafka.topology.principals.CCloudCLI;
 import com.purbon.kafka.topology.roles.TopologyAclBinding;
+import com.purbon.kafka.topology.utils.CCloudUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,15 +29,21 @@ import org.apache.kafka.common.resource.ResourceType;
 public class AclsBindingsBuilder implements BindingsBuilderProvider {
 
   private final TopologyBuilderConfig config;
+  private final CCloudUtils cCloudUtils;
 
   public AclsBindingsBuilder(TopologyBuilderConfig config) {
+    this(config, new CCloudUtils(new CCloudCLI(), config));
+  }
+
+  public AclsBindingsBuilder(TopologyBuilderConfig config, CCloudUtils cCloudUtils) {
     this.config = config;
+    this.cCloudUtils = cCloudUtils;
   }
 
   @Override
   public List<TopologyAclBinding> buildBindingsForConnect(Connector connector, String topicPrefix) {
 
-    String principal = connector.getPrincipal();
+    String principal = translate(connector.getPrincipal());
     List<String> readTopics = connector.getTopics().get("read");
     List<String> writeTopics = connector.getTopics().get("write");
 
@@ -83,7 +91,7 @@ public class AclsBindingsBuilder implements BindingsBuilderProvider {
   @Override
   public List<TopologyAclBinding> buildBindingsForStreamsApp(
       String principal, String topicPrefix, List<String> readTopics, List<String> writeTopics) {
-    return toList(streamsAppStream(principal, topicPrefix, readTopics, writeTopics));
+    return toList(streamsAppStream(translate(principal), topicPrefix, readTopics, writeTopics));
   }
 
   @Override
@@ -108,7 +116,7 @@ public class AclsBindingsBuilder implements BindingsBuilderProvider {
 
   @Override
   public List<TopologyAclBinding> buildBindingsForControlCenter(String principal, String appId) {
-    return toList(controlCenterStream(principal, appId));
+    return toList(controlCenterStream(translate(principal), appId));
   }
 
   private List<TopologyAclBinding> toList(Stream<AclBinding> bindingStream) {
@@ -119,11 +127,11 @@ public class AclsBindingsBuilder implements BindingsBuilderProvider {
     PatternType patternType = prefixed ? PatternType.PREFIXED : PatternType.LITERAL;
 
     List<AclBinding> bindings = new ArrayList<>();
-
+    String principal = translate(producer.getPrincipal());
     bindings.addAll(
         Arrays.asList(
-            buildTopicLevelAcl(producer.getPrincipal(), topic, patternType, AclOperation.DESCRIBE),
-            buildTopicLevelAcl(producer.getPrincipal(), topic, patternType, AclOperation.WRITE)));
+            buildTopicLevelAcl(principal, topic, patternType, AclOperation.DESCRIBE),
+            buildTopicLevelAcl(principal, topic, patternType, AclOperation.WRITE)));
 
     producer
         .getTransactionId()
@@ -157,11 +165,11 @@ public class AclsBindingsBuilder implements BindingsBuilderProvider {
 
   private Stream<AclBinding> consumerAclsStream(Consumer consumer, String topic, boolean prefixed) {
     PatternType patternType = prefixed ? PatternType.PREFIXED : PatternType.LITERAL;
+    String principal = translate(consumer.getPrincipal());
     return Stream.of(
-        buildTopicLevelAcl(consumer.getPrincipal(), topic, patternType, AclOperation.DESCRIBE),
-        buildTopicLevelAcl(consumer.getPrincipal(), topic, patternType, AclOperation.READ),
-        buildGroupLevelAcl(
-            consumer.getPrincipal(), consumer.groupString(), patternType, AclOperation.READ));
+        buildTopicLevelAcl(principal, topic, patternType, AclOperation.DESCRIBE),
+        buildTopicLevelAcl(principal, topic, patternType, AclOperation.READ),
+        buildGroupLevelAcl(principal, consumer.groupString(), patternType, AclOperation.READ));
   }
 
   private Stream<AclBinding> streamsAppStream(
@@ -183,15 +191,13 @@ public class AclsBindingsBuilder implements BindingsBuilderProvider {
   }
 
   private Stream<AclBinding> schemaRegistryAclsStream(SchemaRegistryInstance schemaRegistry) {
+    String principal = translate(schemaRegistry.getPrincipal());
     List<AclBinding> bindings =
         Stream.of(AclOperation.DESCRIBE_CONFIGS, AclOperation.WRITE, AclOperation.READ)
             .map(
                 aclOperation ->
                     buildTopicLevelAcl(
-                        schemaRegistry.getPrincipal(),
-                        schemaRegistry.topicString(),
-                        PatternType.LITERAL,
-                        aclOperation))
+                        principal, schemaRegistry.topicString(), PatternType.LITERAL, aclOperation))
             .collect(Collectors.toList());
     return bindings.stream();
   }
@@ -236,6 +242,16 @@ public class AclsBindingsBuilder implements BindingsBuilderProvider {
             principal, "*", AclOperation.DESCRIBE_CONFIGS, AclPermissionType.ALLOW);
     bindings.add(new AclBinding(resourcePattern, entry));
     return bindings.stream();
+  }
+
+  private String translate(String namedPrincipal) {
+    if (config.useConfuentCloud() && config.enabledExperimental()) {
+      int id =
+          cCloudUtils.translate(namedPrincipal.split(":")[1]); // Check with the part after User:
+      return "User:" + id;
+    } else {
+      return namedPrincipal;
+    }
   }
 
   private AclBinding buildTopicLevelAcl(
