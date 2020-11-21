@@ -24,7 +24,7 @@ public class CreateAccounts extends BaseAccountsAction {
     Set<ServiceAccount> mappedAccounts = new HashSet<>();
     for (ServiceAccount account : accounts) {
       ServiceAccount sa =
-          provider.createServiceAccount(account.getName(), "principal managed by KTB");
+          provider.createServiceAccount(account.getName(), account.getDescription());
       mappedAccounts.add(sa);
     }
     accounts = mappedAccounts;

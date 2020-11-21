@@ -38,8 +38,7 @@ public abstract class BaseAccountsAction extends BaseAction {
       return false;
     }
     BaseAccountsAction that = (BaseAccountsAction) o;
-    return Objects.equals(provider, that.provider) &&
-        Objects.equals(accounts, that.accounts);
+    return Objects.equals(provider, that.provider) && Objects.equals(accounts, that.accounts);
   }
 
   @Override

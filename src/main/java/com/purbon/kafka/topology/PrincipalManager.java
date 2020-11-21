@@ -62,7 +62,7 @@ public class PrincipalManager {
     if (config.allowDelete()) {
       List<ServiceAccount> principalsToBeDeleted =
           accounts.values().stream()
-              .filter(currentPrincipal -> !principals.contains(currentPrincipal))
+              .filter(currentPrincipal -> !principals.contains(currentPrincipal.getName()))
               .collect(Collectors.toList());
       if (!principalsToBeDeleted.isEmpty()) {
         plan.add(new ClearAccounts(provider, principalsToBeDeleted));

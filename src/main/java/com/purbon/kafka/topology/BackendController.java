@@ -82,6 +82,6 @@ public class BackendController {
   }
 
   public int size() {
-    return bindings.size();
+    return bindings.size() + serviceAccounts.size();
   }
 }
