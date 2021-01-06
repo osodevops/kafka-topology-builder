@@ -1,15 +1,16 @@
 package com.purbon.kafka.topology;
 
+import static com.google.common.collect.Lists.newArrayList;
 import static com.purbon.kafka.topology.BuilderCLI.BROKERS_OPTION;
 import static com.purbon.kafka.topology.TopologyBuilderConfig.OPTIMIZED_ACLS_CONFIG;
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.refEq;
 import static org.mockito.Mockito.*;
 
 import com.purbon.kafka.topology.actions.Action;
@@ -42,6 +43,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Matchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
@@ -53,6 +55,7 @@ public class AccessControlManagerTest {
   @Mock BackendController backendController;
 
   @Mock PrintStream mockPrintStream;
+  @Mock TopologyBuilderConfig config;
 
   ExecutionPlan plan;
 
@@ -65,30 +68,21 @@ public class AccessControlManagerTest {
     TestUtils.deleteStateFile();
     plan = ExecutionPlan.init(backendController, mockPrintStream);
     accessControlManager = new AccessControlManager(aclsProvider, aclsBuilder);
-    doNothing().when(backendController).add(Matchers.anyList());
+    doNothing().when(backendController).addBindings(Matchers.anyList());
     doNothing().when(backendController).flushAndClose();
   }
 
   @Test
   public void newConsumerACLsCreation() {
-
-    List<Consumer> consumers = new ArrayList<>();
-    consumers.add(new Consumer("User:app1"));
-    Project project = new ProjectImpl();
-    project.setConsumers(consumers);
-
     Topic topicA = new TopicImpl("topicA");
-    project.addTopic(topicA);
-
-    Topology topology = new TopologyImpl();
-    topology.addProject(project);
-
-    List<Consumer> users = asList(new Consumer("User:app1"));
+    TestTopologyBuilder builder =
+        TestTopologyBuilder.createProject().addTopic(topicA).addConsumer("User:app1");
+    List<Consumer> users = newArrayList(builder.getConsumers());
 
     doReturn(new ArrayList<TopologyAclBinding>())
         .when(aclsBuilder)
         .buildBindingsForConsumers(users, topicA.toString(), false);
-    accessControlManager.apply(topology, plan);
+    accessControlManager.apply(builder.buildTopology(), plan);
     verify(aclsBuilder, times(1))
         .buildBindingsForConsumers(eq(users), eq(topicA.toString()), eq(false));
   }
@@ -104,25 +98,16 @@ public class AccessControlManagerTest {
     TopologyBuilderConfig config = new TopologyBuilderConfig(cliOps, props);
     accessControlManager = new AccessControlManager(aclsProvider, aclsBuilder, config);
 
-    List<Consumer> consumers = new ArrayList<>();
-    consumers.add(new Consumer("User:app1"));
-    Project project = new ProjectImpl();
-    project.setConsumers(consumers);
-
-    Topic topicA = new TopicImpl("topicA");
-    project.addTopic(topicA);
-
-    Topology topology = new TopologyImpl();
-    topology.addProject(project);
-
-    List<Consumer> users = asList(new Consumer("User:app1"));
+    TestTopologyBuilder builder =
+        TestTopologyBuilder.createProject().addTopic("topicA").addConsumer("User:app1");
+    List<Consumer> users = newArrayList(builder.getConsumers());
 
     doReturn(new ArrayList<TopologyAclBinding>())
         .when(aclsBuilder)
-        .buildBindingsForConsumers(users, project.namePrefix(), true);
-    accessControlManager.apply(topology, plan);
+        .buildBindingsForConsumers(users, builder.getProject().namePrefix(), true);
+    accessControlManager.apply(builder.buildTopology(), plan);
     verify(aclsBuilder, times(1))
-        .buildBindingsForConsumers(eq(users), eq(project.namePrefix()), eq(true));
+        .buildBindingsForConsumers(eq(users), eq(builder.getProject().namePrefix()), eq(true));
   }
 
   @Test
@@ -131,7 +116,7 @@ public class AccessControlManagerTest {
     Consumer projectConsumer = new Consumer("project-consumer");
     Consumer topicConsumer = new Consumer("topic-consumer");
 
-    List<Consumer> projectConsumers = Collections.singletonList(projectConsumer);
+    List<Consumer> projectConsumers = singletonList(projectConsumer);
 
     Topology topology = new TopologyImpl();
     topology.setContext("testConsumerAclsAtTopicLevel");
@@ -165,23 +150,16 @@ public class AccessControlManagerTest {
 
   @Test
   public void newProducerACLsCreation() {
-
-    List<Producer> producers = new ArrayList<>();
-    producers.add(new Producer("User:app1"));
-    Project project = new ProjectImpl();
-    project.setProducers(producers);
-
     Topic topicA = new TopicImpl("topicA");
-    project.addTopic(topicA);
-
-    Topology topology = new TopologyImpl();
-    topology.addProject(project);
+    TestTopologyBuilder builder =
+        TestTopologyBuilder.createProject().addTopic(topicA).addProducer("User:app1");
+    List<Producer> producers = newArrayList(builder.getProducers());
 
     doReturn(new ArrayList<TopologyAclBinding>())
         .when(aclsBuilder)
         .buildBindingsForProducers(producers, topicA.toString(), false);
 
-    accessControlManager.apply(topology, plan);
+    accessControlManager.apply(builder.buildTopology(), plan);
     verify(aclsBuilder, times(1))
         .buildBindingsForProducers(eq(producers), eq(topicA.toString()), eq(false));
   }
@@ -196,23 +174,16 @@ public class AccessControlManagerTest {
     TopologyBuilderConfig config = new TopologyBuilderConfig(cliOps, props);
     accessControlManager = new AccessControlManager(aclsProvider, aclsBuilder, config);
 
-    List<Producer> producers = new ArrayList<>();
-    producers.add(new Producer("User:app1"));
-    Project project = new ProjectImpl();
-    project.setProducers(producers);
-
-    Topic topicA = new TopicImpl("topicA");
-    project.addTopic(topicA);
-
-    Topology topology = new TopologyImpl();
-    topology.addProject(project);
+    TestTopologyBuilder builder =
+        TestTopologyBuilder.createProject().addTopic("topicA").addProducer("User:app1");
+    List<Producer> producers = newArrayList(builder.getProducers());
 
     doReturn(new ArrayList<TopologyAclBinding>())
         .when(aclsBuilder)
-        .buildBindingsForProducers(producers, project.namePrefix(), true);
-    accessControlManager.apply(topology, plan);
+        .buildBindingsForProducers(producers, builder.getProject().namePrefix(), true);
+    accessControlManager.apply(builder.buildTopology(), plan);
     verify(aclsBuilder, times(1))
-        .buildBindingsForProducers(eq(producers), eq(project.namePrefix()), eq(true));
+        .buildBindingsForProducers(eq(producers), eq(builder.getProject().namePrefix()), eq(true));
   }
 
   @Test
@@ -221,7 +192,7 @@ public class AccessControlManagerTest {
     Producer projectProducer = new Producer("project-producer");
     Producer topicProducer = new Producer("topic-producer");
 
-    List<Producer> projectProducers = Collections.singletonList(projectProducer);
+    List<Producer> projectProducers = singletonList(projectProducer);
 
     Topology topology = new TopologyImpl();
     topology.setContext("testProducerAclsAtTopicLevel");
@@ -264,7 +235,7 @@ public class AccessControlManagerTest {
     topics.put(KStream.READ_TOPICS, asList("topicA", "topicB"));
     topics.put(KStream.WRITE_TOPICS, asList("topicC", "topicD"));
     app.setTopics(topics);
-    project.setStreams(Collections.singletonList(app));
+    project.setStreams(singletonList(app));
 
     Topology topology = new TopologyImpl();
     topology.addProject(project);
@@ -298,11 +269,11 @@ public class AccessControlManagerTest {
 
     SchemaRegistryInstance instance = new SchemaRegistryInstance();
     instance.setPrincipal("User:foo");
-    sr.setInstances(Collections.singletonList(instance));
+    sr.setInstances(singletonList(instance));
 
     Map<String, List<User>> rbac = new HashMap<>();
-    rbac.put("SecurityAdmin", Collections.singletonList(new User("User:foo")));
-    rbac.put("ClusterAdmin", Collections.singletonList(new User("User:bar")));
+    rbac.put("SecurityAdmin", singletonList(new User("User:foo")));
+    rbac.put("ClusterAdmin", singletonList(new User("User:bar")));
     sr.setRbac(Optional.of(rbac));
 
     platform.setSchemaRegistry(sr);
@@ -337,7 +308,7 @@ public class AccessControlManagerTest {
     ControlCenterInstance instance = new ControlCenterInstance();
     instance.setPrincipal("User:foo");
     instance.setAppId("appid");
-    c3.setInstances(Collections.singletonList(instance));
+    c3.setInstances(singletonList(instance));
     platform.setControlCenter(c3);
     topology.setPlatform(platform);
 
@@ -359,8 +330,8 @@ public class AccessControlManagerTest {
     Platform platform = new Platform();
     Kafka kafka = new Kafka();
     Map<String, List<User>> rbac = new HashMap<>();
-    rbac.put("Operator", Collections.singletonList(new User("User:foo")));
-    rbac.put("ClusterAdmin", Collections.singletonList(new User("User:bar")));
+    rbac.put("Operator", singletonList(new User("User:foo")));
+    rbac.put("ClusterAdmin", singletonList(new User("User:bar")));
     kafka.setRbac(Optional.of(rbac));
     platform.setKafka(kafka);
     topology.setPlatform(platform);
@@ -384,8 +355,8 @@ public class AccessControlManagerTest {
     Platform platform = new Platform();
     KafkaConnect connect = new KafkaConnect();
     Map<String, List<User>> rbac = new HashMap<>();
-    rbac.put("Operator", Collections.singletonList(new User("User:foo")));
-    rbac.put("ClusterAdmin", Collections.singletonList(new User("User:bar")));
+    rbac.put("Operator", singletonList(new User("User:foo")));
+    rbac.put("ClusterAdmin", singletonList(new User("User:bar")));
     connect.setRbac(Optional.of(rbac));
     platform.setKafkaConnect(connect);
     topology.setPlatform(platform);
@@ -412,7 +383,7 @@ public class AccessControlManagerTest {
     topics.put(Connector.READ_TOPICS, asList("topicA", "topicB"));
     connector1.setTopics(topics);
 
-    project.setConnectors(asList(connector1));
+    project.setConnectors(singletonList(connector1));
 
     Topology topology = new TopologyImpl();
     topology.addProject(project);
@@ -428,28 +399,22 @@ public class AccessControlManagerTest {
 
   @Test
   public void testDryRunMode() throws IOException {
-
     plan = ExecutionPlan.init(backendController, mockPrintStream);
-    Topology topology = new TopologyImpl();
-    topology.setContext("foo");
-
-    List<Consumer> consumers = new ArrayList<>();
-    consumers.add(new Consumer("User:app1"));
-
-    Project project = new ProjectImpl("project");
-    project.setConsumers(consumers);
-    topology.addProject(project);
+    accessControlManager =
+        new AccessControlManager(aclsProvider, new AclsBindingsBuilder(config), config);
 
     Topic topicA = new TopicImpl("topicA");
-    project.addTopic(topicA);
+    TestTopologyBuilder builder =
+        TestTopologyBuilder.createProject("foo", "project")
+            .addTopic(topicA)
+            .addConsumer("User:app1");
+    List<Consumer> users = newArrayList(builder.getConsumers());
 
-    List<Consumer> users = asList(new Consumer("User:app1"));
-
-    doReturn(Collections.singletonList(new TopologyAclBinding()))
+    doReturn(singletonList(new TopologyAclBinding()))
         .when(aclsBuilder)
         .buildBindingsForConsumers(users, topicA.toString(), false);
 
-    accessControlManager.apply(topology, plan);
+    accessControlManager.apply(builder.buildTopology(), plan);
 
     plan.run(true);
 
@@ -457,70 +422,97 @@ public class AccessControlManagerTest {
   }
 
   @Test
-  public void testAclDeleteLogic() throws IOException {
+  public void testAclDeleteWithDeleteAllEnabled() throws IOException {
+    doReturn(true).when(config).allowDelete();
 
-    BackendController backendController = new BackendController();
-    backendController.load();
-    backendController.reset();
+    testAclsDelete();
+  }
+
+  @Test
+  public void testAclDeleteWithDeleteAllDisabled() throws IOException {
+    doReturn(false).when(config).allowDelete();
+
+    testNoAclsDeleted();
+  }
+
+  @Test
+  public void testAclDeleteWithDetailedOptionEnabled() throws IOException {
+    doReturn(true).when(config).isAllowDeleteBindings();
+    doReturn(false).when(config).isAllowDeleteTopics();
+
+    testAclsDelete();
+  }
+
+  @Test
+  public void testAclDeleteWithDetailedOptionDisabled() throws IOException {
+    doReturn(false).when(config).isAllowDeleteBindings();
+    doReturn(false).when(config).isAllowDeleteTopics();
+
+    testNoAclsDeleted();
+  }
+
+  private void testNoAclsDeleted() throws IOException {
+    BackendController backendController = initializeFileBackendController();
     plan = ExecutionPlan.init(backendController, mockPrintStream);
-    accessControlManager = new AccessControlManager(aclsProvider, aclsBuilder);
+    accessControlManager =
+        new AccessControlManager(aclsProvider, new AclsBindingsBuilder(config), config);
 
-    List<Consumer> consumers = new ArrayList<>();
-    consumers.add(new Consumer("User:app1"));
-    consumers.add(new Consumer("User:app2"));
+    TestTopologyBuilder builder =
+        TestTopologyBuilder.createProject()
+            .addTopic("topicA")
+            .addConsumer("User:app1")
+            .addConsumer("User:app2");
 
-    Topic topicA = new TopicImpl("topicA");
+    accessControlManager.apply(builder.buildTopology(), plan);
+    plan.run();
 
-    Topology topology = buildTopology(consumers, asList(topicA));
+    verify(aclsProvider, times(1)).createBindings(any());
 
-    List<TopologyAclBinding> bindings = returnAclsForConsumers(consumers, topicA.getName());
-    doReturn(bindings)
-        .when(aclsBuilder)
-        .buildBindingsForConsumers(any(), eq(topicA.toString()), eq(false));
+    builder.removeConsumer("User:app2");
 
+    Mockito.reset(aclsProvider);
+    plan = ExecutionPlan.init(backendController, mockPrintStream);
+    accessControlManager.apply(builder.buildTopology(), plan);
+    plan.run();
+
+    verify(aclsProvider, times(0)).clearBindings(any());
+  }
+
+  private void testAclsDelete() throws IOException {
+    BackendController backendController = initializeFileBackendController();
+    plan = ExecutionPlan.init(backendController, mockPrintStream);
+    accessControlManager =
+        new AccessControlManager(aclsProvider, new AclsBindingsBuilder(config), config);
+
+    TestTopologyBuilder builder =
+        TestTopologyBuilder.createProject()
+            .addTopic("topicA")
+            .addConsumer("User:app1")
+            .addConsumer("User:app2");
+
+    accessControlManager.apply(builder.buildTopology(), plan);
+    plan.run();
+
+    verify(aclsProvider, times(1)).createBindings(any());
+
+    builder.removeConsumer("User:app2");
+
+    Mockito.reset(aclsProvider);
+    plan = ExecutionPlan.init(backendController, mockPrintStream);
+    Topology topology = builder.buildTopology();
     accessControlManager.apply(topology, plan);
     plan.run();
 
-    verify(aclsBuilder, times(1))
-        .buildBindingsForConsumers(refEq(consumers), eq(topicA.toString()), eq(false));
-
-    consumers = new ArrayList<>();
-    consumers.add(new Consumer("User:app1"));
-
-    bindings = returnAclsForConsumers(consumers, topicA.getName());
-    doReturn(bindings)
-        .when(aclsBuilder)
-        .buildBindingsForConsumers(any(), eq(topicA.toString()), eq(false));
-
-    Topology newTopology = buildTopology(consumers, asList(topicA));
-
-    accessControlManager.apply(newTopology, plan);
-    plan.run();
-
     List<TopologyAclBinding> bindingsToDelete =
-        returnAclsForConsumers(asList(new Consumer("User:app2")), topicA.getName());
+        returnAclsForConsumers(
+            singletonList(new Consumer("User:app2")), builder.getTopic("topicA").toString());
 
     verify(aclsProvider, times(1)).clearBindings(new HashSet<>(bindingsToDelete));
   }
 
-  private Topology buildTopology(List<Consumer> consumers, List<Topic> topics) {
-
-    Project project = new ProjectImpl();
-    project.setConsumers(consumers);
-
-    for (Topic topic : topics) {
-      project.addTopic(topic);
-    }
-
-    Topology topology = new TopologyImpl();
-    topology.addProject(project);
-
-    return topology;
-  }
-
   private List<TopologyAclBinding> returnAclsForConsumers(List<Consumer> consumers, String topic) {
 
-    List<AclBinding> acls = new ArrayList<>();
+    List<AclBinding> acls = newArrayList();
 
     for (Consumer consumer : consumers) {
       acls.add(
@@ -556,5 +548,12 @@ public class AccessControlManagerTest {
         .addResource(ResourceType.GROUP, group, patternType)
         .addControlEntry("*", op, AclPermissionType.ALLOW)
         .build();
+  }
+
+  private BackendController initializeFileBackendController() throws IOException {
+    BackendController backendController = new BackendController();
+    backendController.load();
+    backendController.reset();
+    return backendController;
   }
 }

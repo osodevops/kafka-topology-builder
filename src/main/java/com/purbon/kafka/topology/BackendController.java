@@ -2,6 +2,7 @@ package com.purbon.kafka.topology;
 
 import com.purbon.kafka.topology.backend.Backend;
 import com.purbon.kafka.topology.backend.FileBackend;
+import com.purbon.kafka.topology.model.cluster.ServiceAccount;
 import com.purbon.kafka.topology.roles.TopologyAclBinding;
 import java.io.IOException;
 import java.util.HashSet;
@@ -22,7 +23,9 @@ public class BackendController {
   private static final String STORE_TYPE = "acls";
 
   private final Backend backend;
+  private Set<String> topics;
   private Set<TopologyAclBinding> bindings;
+  private Set<ServiceAccount> serviceAccounts;
 
   public BackendController() {
     this(new FileBackend());
@@ -31,20 +34,35 @@ public class BackendController {
   public BackendController(Backend backend) {
     this.backend = backend;
     this.bindings = new HashSet<>();
+    this.serviceAccounts = new HashSet<>();
+    this.topics = new HashSet<>();
   }
 
-  public void add(List<TopologyAclBinding> bindings) {
+  public void addBindings(List<TopologyAclBinding> bindings) {
     LOGGER.debug(String.format("Adding bindings %s to the backend", bindings));
     this.bindings.addAll(bindings);
   }
 
-  public void add(TopologyAclBinding binding) {
-    LOGGER.debug(String.format("Adding binding %s to the backend", binding));
-    this.bindings.add(binding);
+  public void addTopics(Set<String> topics) {
+    LOGGER.debug(String.format("Adding topics %s to the backend", topics));
+    this.topics.addAll(topics);
+  }
+
+  public void addServiceAccounts(Set<ServiceAccount> serviceAccounts) {
+    LOGGER.debug(String.format("Adding Service Accounts %s to the backend", serviceAccounts));
+    this.serviceAccounts.addAll(serviceAccounts);
+  }
+
+  public Set<ServiceAccount> getServiceAccounts() {
+    return new HashSet<>(serviceAccounts);
   }
 
   public Set<TopologyAclBinding> getBindings() {
-    return new HashSet<>(bindings);
+    return bindings;
+  }
+
+  public Set<String> getTopics() {
+    return topics;
   }
 
   public void flushAndClose() {
@@ -52,21 +70,29 @@ public class BackendController {
     backend.createOrOpen(Mode.TRUNCATE);
     backend.saveType(STORE_TYPE);
     backend.saveBindings(bindings);
+    backend.saveType("ServiceAccounts");
+    backend.saveAccounts(serviceAccounts);
+    backend.saveType("Topics");
+    backend.saveTopics(topics);
     backend.close();
   }
 
   public void load() throws IOException {
     LOGGER.debug(String.format("Loading data from the backend at %s", backend.getClass()));
     backend.createOrOpen();
-    bindings.addAll(backend.load());
+    bindings.addAll(backend.loadBindings());
+    serviceAccounts.addAll(backend.loadServiceAccounts());
+    topics.addAll(backend.loadTopics());
   }
 
   public void reset() {
     LOGGER.debug("Reset the bindings cache");
     bindings.clear();
+    serviceAccounts.clear();
+    topics.clear();
   }
 
   public int size() {
-    return bindings.size();
+    return bindings.size() + serviceAccounts.size() + topics.size();
   }
 }

@@ -1,5 +1,6 @@
 package com.purbon.kafka.topology.integration;
 
+import com.purbon.kafka.topology.integration.containerutils.ContainerFactory;
 import com.purbon.kafka.topology.integration.containerutils.ContainerTestUtils;
 import com.purbon.kafka.topology.integration.containerutils.SaslPlaintextKafkaContainer;
 import com.purbon.kafka.topology.integration.containerutils.TestConsumer;
@@ -29,7 +30,7 @@ public final class AclProducerAndConsumerIT {
   @BeforeClass
   public static void beforeClass() {
     container =
-        new SaslPlaintextKafkaContainer()
+        ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"))
             .withUser(NO_ACCESS_USERNAME)
             .withUser(PRODUCER_USERNAME)
             .withUser(CONSUMER_USERNAME)
@@ -37,9 +38,7 @@ public final class AclProducerAndConsumerIT {
             .withUser(OTHER_CONSUMER_USERNAME);
     container.start();
     ContainerTestUtils.populateAcls(
-        container,
-        "/acl-producer-and-consumer-it.yaml",
-        "/acl-producer-and-consumer-it.properties");
+        container, "/acl-producer-and-consumer-it.yaml", "/integration-tests.properties");
   }
 
   @AfterClass

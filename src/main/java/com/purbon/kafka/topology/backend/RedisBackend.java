@@ -1,9 +1,9 @@
 package com.purbon.kafka.topology.backend;
 
 import com.purbon.kafka.topology.BackendController.Mode;
+import com.purbon.kafka.topology.model.cluster.ServiceAccount;
 import com.purbon.kafka.topology.roles.TopologyAclBinding;
 import java.io.IOException;
-import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -48,16 +48,8 @@ public class RedisBackend implements Backend {
   }
 
   @Override
-  public Set<TopologyAclBinding> load() throws IOException {
-    return load(null);
-  }
-
-  @Override
-  public Set<TopologyAclBinding> load(URI uri) throws IOException {
-
-    if (!jedis.isConnected()) {
-      createOrOpen();
-    }
+  public Set<TopologyAclBinding> loadBindings() throws IOException {
+    connectIfNeed();
 
     Set<TopologyAclBinding> bindings = new HashSet<>();
     String type = jedis.get(KAFKA_TOPOLOGY_BUILDER_TYPE);
@@ -70,6 +62,22 @@ public class RedisBackend implements Backend {
     }
 
     return bindings;
+  }
+
+  private void connectIfNeed() {
+    if (!jedis.isConnected()) {
+      createOrOpen();
+    }
+  }
+
+  @Override
+  public Set<ServiceAccount> loadServiceAccounts() throws IOException {
+    return new HashSet<>();
+  }
+
+  @Override
+  public Set<String> loadTopics() throws IOException {
+    return new HashSet<>();
   }
 
   @Override
@@ -85,6 +93,12 @@ public class RedisBackend implements Backend {
 
     jedis.sadd(KAFKA_TOPOLOGY_BUILDER_BINDINGS, members);
   }
+
+  @Override
+  public void saveAccounts(Set<ServiceAccount> accounts) {}
+
+  @Override
+  public void saveTopics(Set<String> topics) {}
 
   @Override
   public void close() {

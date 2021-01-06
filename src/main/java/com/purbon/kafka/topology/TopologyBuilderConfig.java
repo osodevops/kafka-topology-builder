@@ -21,21 +21,19 @@ import org.apache.kafka.clients.admin.AdminClientConfig;
 
 public class TopologyBuilderConfig {
 
-  public static final String KAFKA_INTERNAL_TOPIC_PREFIXES = "kafka.internal.topic.prefixes";
-  public static final String ACCESS_CONTROL_IMPLEMENTATION_CLASS =
-      "topology.builder.access.control.class";
+  static final String KAFKA_INTERNAL_TOPIC_PREFIXES = "kafka.internal.topic.prefixes";
+  static final String ACCESS_CONTROL_IMPLEMENTATION_CLASS = "topology.builder.access.control.class";
 
-  public static final String ACCESS_CONTROL_DEFAULT_CLASS =
+  static final String ACCESS_CONTROL_DEFAULT_CLASS =
       "com.purbon.kafka.topology.roles.SimpleAclsProvider";
-  public static final String RBAC_ACCESS_CONTROL_CLASS =
-      "com.purbon.kafka.topology.roles.RBACProvider";
+  static final String RBAC_ACCESS_CONTROL_CLASS = "com.purbon.kafka.topology.roles.RBACProvider";
 
-  public static final String STATE_PROCESSOR_IMPLEMENTATION_CLASS =
+  private static final String STATE_PROCESSOR_IMPLEMENTATION_CLASS =
       "topology.builder.state.processor.class";
 
-  public static final String STATE_PROCESSOR_DEFAULT_CLASS =
+  static final String STATE_PROCESSOR_DEFAULT_CLASS =
       "com.purbon.kafka.topology.backend.FileBackend";
-  public static final String REDIS_STATE_PROCESSOR_CLASS =
+  static final String REDIS_STATE_PROCESSOR_CLASS =
       "com.purbon.kafka.topology.backend.RedisBackend";
 
   static final String REDIS_HOST_CONFIG = "topology.builder.redis.host";
@@ -58,10 +56,27 @@ public class TopologyBuilderConfig {
   static final String PROJECT_PREFIX_FORMAT_CONFIG = "topology.project.prefix.format";
   static final String TOPIC_PREFIX_SEPARATOR_CONFIG = "topology.topic.prefix.separator";
   static final String TOPOLOGY_VALIDATIONS_CONFIG = "topology.validations";
+  static final String CONNECTOR_ALLOW_TOPIC_CREATE = "topology.connector.allow.topic.create";
 
   static final String TOPOLOGY_FILE_TYPE = "topology.file.type";
 
   static final String OPTIMIZED_ACLS_CONFIG = "topology.acls.optimized";
+
+  static final String ALLOW_DELETE_TOPICS = "allow.delete.topics";
+  private static final String ALLOW_DELETE_BINDINGS = "allow.delete.bindings";
+  private static final String ALLOW_DELETE_PRINCIPALS = "allow.delete.principals";
+
+  static final String CCLOUD_ENV_CONFIG = "ccloud.environment";
+
+  static final String TOPOLOGY_EXPERIMENTAL_ENABLED_CONFIG = "topology.features.experimental";
+  static final String TOPOLOGY_PRINCIPAL_TRANSLATION_ENABLED_CONFIG =
+      "topology.translation.principal.enabled";
+
+  public static final String TOPOLOGY_TOPIC_STATE_FROM_CLUSTER =
+      "topology.state.topics.cluster.enabled";
+
+  static final String SERVICE_ACCOUNT_MANAGED_PREFIXES =
+      "topology.service.accounts.managed.prefixes";
 
   private final Map<String, String> cliParams;
   private Config config;
@@ -190,7 +205,7 @@ public class TopologyBuilderConfig {
   private static boolean hasSchemas(Topology topology) {
     return topology.getProjects().stream()
         .flatMap((Function<Project, Stream<Topic>>) project -> project.getTopics().stream())
-        .anyMatch(topic -> topic.getSchemas().isPresent());
+        .anyMatch(topic -> !topic.getSchemas().isEmpty());
   }
 
   private void raiseIfDefault(String key, String _default) throws ConfigurationException {
@@ -216,6 +231,12 @@ public class TopologyBuilderConfig {
 
   public List<String> getKafkaInternalTopicPrefixes() {
     return config.getStringList(KAFKA_INTERNAL_TOPIC_PREFIXES).stream()
+        .map(String::trim)
+        .collect(Collectors.toList());
+  }
+
+  public List<String> getServiceAccountManagedPrefixes() {
+    return config.getStringList(SERVICE_ACCOUNT_MANAGED_PREFIXES).stream()
         .map(String::trim)
         .collect(Collectors.toList());
   }
@@ -260,13 +281,33 @@ public class TopologyBuilderConfig {
     return config.getBoolean(OPTIMIZED_ACLS_CONFIG);
   }
 
+  public String getConfluentCloudEnv() {
+    return config.getString(CCLOUD_ENV_CONFIG);
+  }
+
+  public boolean enabledExperimental() {
+    return config.getBoolean(TOPOLOGY_EXPERIMENTAL_ENABLED_CONFIG);
+  }
+
+  public boolean useConfuentCloud() {
+    return config.hasPath(CCLOUD_ENV_CONFIG);
+  }
+
+  public boolean hasProperty(String property) {
+    return config.hasPath(property);
+  }
+
   public List<String> getTopologyValidations() {
     List<String> classes = config.getStringList(TOPOLOGY_VALIDATIONS_CONFIG);
     return classes.stream().map(String::trim).collect(Collectors.toList());
   }
 
+  public boolean enabledConnectorTopicCreateAcl() {
+    return config.getBoolean(CONNECTOR_ALLOW_TOPIC_CREATE);
+  }
+
   public boolean allowDelete() {
-    return Boolean.parseBoolean(cliParams.getOrDefault(BuilderCLI.ALLOW_DELETE_OPTION, "true"));
+    return Boolean.parseBoolean(cliParams.getOrDefault(BuilderCLI.ALLOW_DELETE_OPTION, "false"));
   }
 
   public boolean isQuiet() {
@@ -279,5 +320,25 @@ public class TopologyBuilderConfig {
 
   public FileType getTopologyFileType() {
     return config.getEnum(FileType.class, TOPOLOGY_FILE_TYPE);
+  }
+
+  public boolean isAllowDeleteTopics() {
+    return config.getBoolean(ALLOW_DELETE_TOPICS);
+  }
+
+  public boolean isAllowDeleteBindings() {
+    return config.getBoolean(ALLOW_DELETE_BINDINGS);
+  }
+
+  public boolean isAllowDeletePrincipals() {
+    return config.getBoolean(ALLOW_DELETE_PRINCIPALS);
+  }
+
+  public boolean enabledPrincipalTranslation() {
+    return config.getBoolean(TOPOLOGY_PRINCIPAL_TRANSLATION_ENABLED_CONFIG);
+  }
+
+  public boolean fetchStateFromTheCluster() {
+    return config.getBoolean(TOPOLOGY_TOPIC_STATE_FROM_CLUSTER);
   }
 }

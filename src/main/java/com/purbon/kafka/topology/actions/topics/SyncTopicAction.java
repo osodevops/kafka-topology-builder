@@ -4,10 +4,12 @@ import com.purbon.kafka.topology.actions.BaseAction;
 import com.purbon.kafka.topology.api.adminclient.TopologyBuilderAdminClient;
 import com.purbon.kafka.topology.model.Topic;
 import com.purbon.kafka.topology.model.TopicSchemas;
+import com.purbon.kafka.topology.model.schema.Subject;
 import com.purbon.kafka.topology.schemas.SchemaRegistryManager;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,12 +37,16 @@ public class SyncTopicAction extends BaseAction {
     this.schemaRegistryManager = schemaRegistryManager;
   }
 
+  public String getTopic() {
+    return fullTopicName;
+  }
+
   @Override
   public void run() throws IOException {
     syncTopic(topic, fullTopicName, listOfTopics);
   }
 
-  public void syncTopic(Topic topic, String fullTopicName, Set<String> listOfTopics)
+  private void syncTopic(Topic topic, String fullTopicName, Set<String> listOfTopics)
       throws IOException {
     LOGGER.debug(String.format("Sync topic %s", fullTopicName));
     if (existTopic(fullTopicName, listOfTopics)) {
@@ -54,21 +60,27 @@ public class SyncTopicAction extends BaseAction {
       adminClient.createTopic(topic, fullTopicName);
     }
 
-    if (topic.getSchemas().isPresent()) {
-      final TopicSchemas schemas = topic.getSchemas().get();
-
-      schemas
-          .getKeySchemaFile()
-          .ifPresent(
-              keySchemaFile ->
-                  schemaRegistryManager.register(fullTopicName + "-key", keySchemaFile));
-
-      schemas
-          .getValueSchemaFile()
-          .ifPresent(
-              valueSchemaFile ->
-                  schemaRegistryManager.register(fullTopicName + "-value", valueSchemaFile));
+    for (TopicSchemas schema : topic.getSchemas()) {
+      Subject keySubject = schema.getKeySubject();
+      Subject valueSubject = schema.getValueSubject();
+      if (keySubject.hasSchemaFile()) {
+        String keySchemaFile = keySubject.getSchemaFile();
+        String subjectName = keySubject.buildSubjectName(topic);
+        schemaRegistryManager.register(subjectName, keySchemaFile, keySubject.getFormat());
+        setCompatibility(subjectName, keySubject.getOptionalCompatibility());
+      }
+      if (valueSubject.hasSchemaFile()) {
+        String valueSchemaFile = valueSubject.getSchemaFile();
+        String subjectName = valueSubject.buildSubjectName(topic);
+        schemaRegistryManager.register(subjectName, valueSchemaFile, valueSubject.getFormat());
+        setCompatibility(subjectName, valueSubject.getOptionalCompatibility());
+      }
     }
+  }
+
+  private void setCompatibility(String subjectName, Optional<String> compatibilityOptional) {
+    compatibilityOptional.ifPresent(
+        compatibility -> schemaRegistryManager.setCompatibility(subjectName, compatibility));
   }
 
   private boolean existTopic(String topic, Set<String> listOfTopics) {

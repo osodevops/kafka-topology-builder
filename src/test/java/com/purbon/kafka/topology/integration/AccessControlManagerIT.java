@@ -1,5 +1,7 @@
 package com.purbon.kafka.topology.integration;
 
+import static com.purbon.kafka.topology.BuilderCLI.ALLOW_DELETE_OPTION;
+import static com.purbon.kafka.topology.BuilderCLI.BROKERS_OPTION;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 
@@ -8,6 +10,7 @@ import com.purbon.kafka.topology.BackendController;
 import com.purbon.kafka.topology.ExecutionPlan;
 import com.purbon.kafka.topology.TopologyBuilderConfig;
 import com.purbon.kafka.topology.api.adminclient.TopologyBuilderAdminClient;
+import com.purbon.kafka.topology.integration.containerutils.ContainerFactory;
 import com.purbon.kafka.topology.integration.containerutils.ContainerTestUtils;
 import com.purbon.kafka.topology.integration.containerutils.SaslPlaintextKafkaContainer;
 import com.purbon.kafka.topology.model.Impl.ProjectImpl;
@@ -59,7 +62,7 @@ public class AccessControlManagerIT {
 
   @BeforeClass
   public static void setup() {
-    container = new SaslPlaintextKafkaContainer();
+    container = ContainerFactory.fetchSaslKafkaContainer(System.getProperty("cp.version"));
     container.start();
   }
 
@@ -85,6 +88,16 @@ public class AccessControlManagerIT {
 
   @Test
   public void aclsRemoval() throws ExecutionException, InterruptedException, IOException {
+
+    Properties props = new Properties();
+
+    HashMap<String, String> cliOps = new HashMap<>();
+    cliOps.put(BROKERS_OPTION, "");
+    cliOps.put(ALLOW_DELETE_OPTION, "true");
+
+    TopologyBuilderConfig config = new TopologyBuilderConfig(cliOps, props);
+
+    accessControlManager = new AccessControlManager(aclsProvider, bindingsBuilder, config);
 
     // Crate an ACL outside of the control of the state manager.
     List<TopologyAclBinding> bindings =
@@ -125,6 +138,16 @@ public class AccessControlManagerIT {
 
   @Test
   public void aclsRemovedTest() throws IOException, ExecutionException, InterruptedException {
+
+    Properties props = new Properties();
+
+    HashMap<String, String> cliOps = new HashMap<>();
+    cliOps.put(BROKERS_OPTION, "");
+    cliOps.put(ALLOW_DELETE_OPTION, "true");
+
+    TopologyBuilderConfig config = new TopologyBuilderConfig(cliOps, props);
+
+    accessControlManager = new AccessControlManager(aclsProvider, bindingsBuilder, config);
 
     TopologyImpl topology = new TopologyImpl();
     topology.setContext("aclsRemovedTest-Integration");

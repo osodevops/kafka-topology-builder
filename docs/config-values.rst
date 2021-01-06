@@ -1,3 +1,4 @@
+.. _config:
 Important configuration values
 *******************************
 
@@ -120,3 +121,49 @@ An example configuration might look like this:
     topology.validations.1=topic.PartitionNumberValidation
 
 Users can pull custom validation available from the class path.
+
+Prevent ACL for topic creation for connector principal
+-----------
+
+By default KTB will create the ACLs needed for connectors to create their own topics (with CREATE ACL operation on the CLUSTER resource).
+You can override this behaviour by setting the config below to `false`. And instead create the needed topics with KTB.
+
+**Property**: *topology.connector.allow.topic.create*
+**Default value**: true
+
+An example configuration will look like this:
+::
+    topology.connector.allow.topic.create=false
+
+Retrieve topic management state from local controlled view
+-----------
+
+By default since it's creation KTB has been retrieving the state of topics from the target cluster, this means pulling the actual view directly
+from there (AK cluster) using AdminClient. However, this is not optimal when multiple teams use KTB as a multi tenant tool.
+
+If you want to manage the current view of topics from the own KTB  cluster state subsystem, you should use this property.
+
+**Property**: *topology.state.topics.cluster.enabled*
+**Default value**: true
+
+This property is fow the time being true as default (backwards compatible), however the local management system for topics will become the
+default in 2.0 and in 3.0 the management using the target cluster will be completely removed.
+
+An example to use local topic management state will look like this:
+::
+    topology.state.topics.cluster.enabled=false
+
+Control allowed Service accounts to be managed by KTB
+-----------
+
+This property is used to control which Service Accounts are allowed to be managed by the KTB, this variable contains a list of allowed prefixes.
+
+**Property**: *topology.service.accounts.managed.prefixes*
+**Default value**: "[]"
+
+An example configuration might look like this:
+::
+    topology.service.accounts.managed.prefixes.0=User:AService
+    topology.service.accounts.managed.prefixes.1=User:BService
+
+If this prefix list is used, only service accounts that match the prefix will be ever processed, anything else will be ignored.
